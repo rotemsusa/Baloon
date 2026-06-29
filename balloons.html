@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>משחק הבלונים</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(160deg, #e0f0ff 0%, #fce4ff 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 12px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    color: #5a3fa0;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 14px;
+  }
+
+  /* CLUES */
+  .clues {
+    background: white;
+    border-radius: 16px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    width: 100%;
+  }
+
+  .clues h2 {
+    font-size: 1rem;
+    color: #5a3fa0;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .clue {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    color: #333;
+    padding: 5px 0;
+    border-bottom: 1px dashed #eee;
+  }
+  .clue:last-child { border-bottom: none; }
+
+  .clue-dot {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* GAME AREA */
+  .game-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+  }
+
+  /* BALLOONS POOL */
+  .pool {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    border-radius: 18px;
+    padding: 14px 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    width: 100%;
+  }
+
+  .pool-label {
+    font-size: 0.8rem;
+    color: #aaa;
+    text-align: center;
+  }
+
+  #pool-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* DROP SLOTS */
+  .slots-wrapper {
+    background: white;
+    border-radius: 18px;
+    padding: 14px 10px 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    width: 100%;
+  }
+
+  .slots-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-bottom: 6px;
+    padding: 0 4px;
+  }
+
+  .slots {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .drop-zone {
+    width: 100%;
+    aspect-ratio: 0.8;
+    max-width: 80px;
+    border: 3px dashed #c8b8f0;
+    border-radius: 50% 50% 40% 40%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .drop-zone.drag-over {
+    background: #f0eaff;
+    border-color: #8a5fe8;
+  }
+
+  .drop-zone.filled {
+    border: none;
+  }
+
+  .slot-num {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #b0a0d0;
+  }
+
+  /* BALLOON */
+  .balloon {
+    cursor: grab;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .balloon:active { cursor: grabbing; }
+  .balloon.dragging { opacity: 0.4; }
+  .balloon svg { display: block; }
+
+  .balloon-label {
+    font-size: 0.75rem;
+    color: #555;
+    font-weight: bold;
+    margin-top: 1px;
+  }
+
+  /* CHECK BUTTON */
+  .btn-check {
+    background: linear-gradient(135deg, #7c4fe0, #b06be8);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 13px 44px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(124,79,224,0.35);
+    width: 100%;
+  }
+  .btn-check:disabled { opacity: 0.45; }
+
+  /* RESULT */
+  .result {
+    font-size: 1.3rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 12px 20px;
+    border-radius: 14px;
+    display: none;
+    width: 100%;
+  }
+  .result.correct { background: #d4f8e0; color: #1a7a40; }
+  .result.wrong   { background: #fde8e8; color: #b02020; }
+
+  .btn-new {
+    background: white;
+    color: #7c4fe0;
+    border: 2px solid #b06be8;
+    border-radius: 30px;
+    padding: 10px 32px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: none;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎈 משחק הבלונים</h1>
+<p class="subtitle">סדר את הבלונים מהקטן לגדול!</p>
+
+<div class="clues">
+  <h2>🔍 הרמזים שלך:</h2>
+  <div id="clues-list"></div>
+</div>
+
+<div class="game-area">
+  <div class="pool">
+    <div class="pool-label">גרור בלון למקום ↓</div>
+    <div id="pool-area"></div>
+  </div>
+
+  <div class="slots-wrapper">
+    <div class="slots-header">
+      <span>① קטן ביותר</span>
+      <span>גדול ביותר ④</span>
+    </div>
+    <div class="slots" id="slots-area"></div>
+  </div>
+
+  <button class="btn-check" id="btn-check" onclick="checkAnswer()">✅ בדוק!</button>
+  <div class="result" id="result"></div>
+  <button class="btn-new" id="btn-new" onclick="newRound()">🔄 שאלה חדשה</button>
+</div>
+
+<script>
+const COLORS = {
+  red:    { hex: '#e84040', name: 'אדום',  dark: '#a02020' },
+  blue:   { hex: '#3d7eff', name: 'כחול',  dark: '#1a40a0' },
+  yellow: { hex: '#f5c800', name: 'צהוב',  dark: '#8a6e00' },
+  green:  { hex: '#2dbb6b', name: 'ירוק',  dark: '#0e6635' },
+};
+
+const ROUNDS = [
+  {
+    order: ['red','blue','yellow','green'],
+    clues: [
+      { bigger: 'blue',   smaller: 'red'    },
+      { bigger: 'yellow', smaller: 'blue'   },
+      { bigger: 'green',  smaller: 'yellow' },
+    ]
+  },
+  {
+    order: ['yellow','red','green','blue'],
+    clues: [
+      { bigger: 'red',   smaller: 'yellow' },
+      { bigger: 'green', smaller: 'red'    },
+      { bigger: 'blue',  smaller: 'green'  },
+    ]
+  },
+  {
+    order: ['green','yellow','red','blue'],
+    clues: [
+      { bigger: 'yellow', smaller: 'green'  },
+      { bigger: 'red',    smaller: 'yellow' },
+      { bigger: 'blue',   smaller: 'red'    },
+    ]
+  },
+  {
+    order: ['blue','red','green','yellow'],
+    clues: [
+      { bigger: 'red',    smaller: 'blue'  },
+      { bigger: 'green',  smaller: 'red'   },
+      { bigger: 'yellow', smaller: 'green' },
+    ]
+  },
+];
+
+let currentRound = null;
+let slots = [null, null, null, null];
+let dragSel = null; // { colorKey, fromType, fromIndex }
+
+function newRound() {
+  const idx = Math.floor(Math.random() * ROUNDS.length);
+  currentRound = ROUNDS[idx];
+  slots = [null, null, null, null];
+  dragSel = null;
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('btn-new').style.display = 'none';
+  document.getElementById('btn-check').disabled = true;
+  renderClues();
+  renderPool();
+  renderSlots();
+}
+
+function renderClues() {
+  const el = document.getElementById('clues-list');
+  el.innerHTML = '';
+  currentRound.clues.forEach(c => {
+    const bigger  = COLORS[c.bigger];
+    const smaller = COLORS[c.smaller];
+    const div = document.createElement('div');
+    div.className = 'clue';
+    div.innerHTML = `
+      <span class="clue-dot" style="background:${bigger.hex}"></span>
+      <span><b>${bigger.name}</b> גדול מ<b>${smaller.name}</b></span>
+      <span class="clue-dot" style="background:${smaller.hex}"></span>
+    `;
+    el.appendChild(div);
+  });
+}
+
+// Balloon SVG with nice string + knot
+function balloonSVG(colorKey, w) {
+  const c = COLORS[colorKey];
+  const h = Math.round(w * 1.2);
+  const cx = w / 2, cy = h / 2;
+  const rx = w / 2 - 2, ry = h / 2 - 2;
+  // shine
+  const sx = cx - w * 0.14, sy = cy - h * 0.2;
+  // knot triangle at bottom of ellipse
+  const knotY = cy + ry;
+  // string: wavy path down from knot
+  const strLen = 22;
+  const x1 = cx, y1 = knotY + 5;
+  const x2 = cx + 4, y2 = knotY + 12;
+  const x3 = cx - 2, y3 = knotY + 18;
+  const x4 = cx, y4 = y1 + strLen;
+  const totalH = h + strLen + 8;
+
+  return `<svg width="${w}" height="${totalH}" viewBox="0 0 ${w} ${totalH}" xmlns="http://www.w3.org/2000/svg">
+    <!-- balloon body -->
+    <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${c.hex}"/>
+    <!-- shine -->
+    <ellipse cx="${sx}" cy="${sy}" rx="${w*0.11}" ry="${h*0.08}" fill="white" opacity="0.45"/>
+    <!-- knot -->
+    <polygon points="${cx-4},${knotY} ${cx+4},${knotY} ${cx},${knotY+7}" fill="${c.dark}"/>
+    <!-- wavy string -->
+    <path d="M${cx},${knotY+7} C${cx+7},${y2} ${cx-6},${y3} ${cx},${y4}" 
+          stroke="#999" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function makeBalloonEl(colorKey, size, fromType, fromIndex) {
+  const div = document.createElement('div');
+  div.className = 'balloon';
+  div.dataset.color = colorKey;
+  div.innerHTML = balloonSVG(colorKey, size) +
+    `<span class="balloon-label">${COLORS[colorKey].name}</span>`;
+
+  // Desktop drag
+  div.draggable = true;
+  div.addEventListener('dragstart', e => {
+    dragSel = { colorKey, fromType, fromIndex };
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => div.classList.add('dragging'), 0);
+  });
+  div.addEventListener('dragend', () => div.classList.remove('dragging'));
+
+  // Touch drag
+  div.addEventListener('touchstart', e => onTouchStart(e, colorKey, fromType, fromIndex), { passive: false });
+  div.addEventListener('touchmove',  onTouchMove,  { passive: false });
+  div.addEventListener('touchend',   onTouchEnd,   { passive: false });
+
+  return div;
+}
+
+function onSlotClick(targetIndex) { /* unused */ }
+
+function placeInSlot(targetIndex) {
+  if (!dragSel) return;
+  const { colorKey, fromType, fromIndex } = dragSel;
+  const displaced = slots[targetIndex];
+
+  if (fromType === 'pool') {
+    slots[targetIndex] = colorKey;
+  } else {
+    slots[targetIndex] = colorKey;
+    slots[fromIndex] = displaced || null;
+  }
+
+  dragSel = null;
+  renderPool(); renderSlots(); updateCheckBtn();
+}
+
+function renderPool() {
+  const area = document.getElementById('pool-area');
+  area.innerHTML = '';
+  const inSlots = new Set(slots.filter(Boolean));
+  const keys = Object.keys(COLORS).filter(k => !inSlots.has(k));
+  if (keys.length === 0) {
+    area.innerHTML = '<span style="color:#aaa;font-size:0.85rem;">כל הבלונים הונחו ✓</span>';
+    return;
+  }
+  keys.forEach(key => area.appendChild(makeBalloonEl(key, 62, 'pool', null)));
+
+  // Allow dragging balloon back to pool
+  area.addEventListener('dragover', e => e.preventDefault());
+  area.addEventListener('drop', e => {
+    e.preventDefault();
+    if (dragSel && dragSel.fromType === 'slot') {
+      slots[dragSel.fromIndex] = null;
+      dragSel = null;
+      renderPool(); renderSlots(); updateCheckBtn();
+    }
+  });
+}
+
+function renderSlots() {
+  const area = document.getElementById('slots-area');
+  area.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const slotDiv = document.createElement('div');
+    slotDiv.className = 'slot';
+
+    const dz = document.createElement('div');
+    dz.className = 'drop-zone' + (slots[i] ? ' filled' : '');
+    dz.dataset.index = i;
+
+    if (slots[i]) {
+      const size = 38 + i * 13;
+      const b = makeBalloonEl(slots[i], size, 'slot', i);
+      dz.appendChild(b);
+    }
+
+    // Drag events
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault();
+      dz.classList.remove('drag-over');
+      placeInSlot(i);
+    });
+
+    const num = document.createElement('div');
+    num.className = 'slot-num';
+    num.textContent = i + 1;
+
+    slotDiv.appendChild(dz);
+    slotDiv.appendChild(num);
+    area.appendChild(slotDiv);
+  }
+}
+
+function updateCheckBtn() {
+  document.getElementById('btn-check').disabled = slots.some(s => s === null);
+}
+
+function checkAnswer() {
+  const res = document.getElementById('result');
+  if (JSON.stringify(slots) === JSON.stringify(currentRound.order)) {
+    res.innerHTML = '🎉 כל הכבוד! סידרת נכון! 🎈🎈🎈';
+    res.className = 'result correct';
+  } else {
+    res.innerHTML = '🤔 לא בדיוק... נסה שוב!';
+    res.className = 'result wrong';
+  }
+  res.style.display = 'block';
+  document.getElementById('btn-new').style.display = 'block';
+}
+
+// ── TOUCH ──────────────────────────────────────────────────────────────────
+let touchClone = null;
+
+function onTouchStart(e, colorKey, fromType, fromIndex) {
+  e.preventDefault();
+  dragSel = { colorKey, fromType, fromIndex };
+
+  const el = e.currentTarget;
+  touchClone = el.cloneNode(true);
+  touchClone.style.cssText = 'position:fixed;opacity:0.88;pointer-events:none;z-index:9999;transform:scale(1.12);transition:none;';
+  document.body.appendChild(touchClone);
+  moveTouchClone(e.touches[0]);
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (touchClone) moveTouchClone(e.touches[0]);
+}
+
+function onTouchEnd(e) {
+  e.preventDefault();
+  if (!touchClone) return;
+  const touch = e.changedTouches[0];
+  touchClone.remove(); touchClone = null;
+
+  // Find element under finger
+  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!target) { dragSel = null; return; }
+
+  const dz = target.closest('.drop-zone');
+  if (dz) {
+    placeInSlot(parseInt(dz.dataset.index));
+  } else if (target.closest('.pool') && dragSel && dragSel.fromType === 'slot') {
+    slots[dragSel.fromIndex] = null;
+    dragSel = null;
+    renderPool(); renderSlots(); updateCheckBtn();
+  } else {
+    dragSel = null;
+  }
+}
+
+function moveTouchClone(touch) {
+  const w = touchClone.offsetWidth, h = touchClone.offsetHeight;
+  touchClone.style.left = (touch.clientX - w/2) + 'px';
+  touchClone.style.top  = (touch.clientY - h/2) + 'px';
+}
+
+newRound();
+</script>
+</body>
+</html>
